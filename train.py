@@ -7,6 +7,7 @@ import argparse
 import json
 import torch
 import torch.nn.functional as F
+import wandb
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DistributedSampler, DataLoader
 import torch.multiprocessing as mp
@@ -245,6 +246,15 @@ def main():
     parser.add_argument('--validation_interval', default=1000, type=int)
     parser.add_argument('--fine_tuning', default=False, type=bool)
 
+    # Wandb
+    parser.add_argument(
+        "--wandb-project", type=str, default="dws-nets", help="wandb project name"
+    )
+    parser.add_argument("--wandb-entity", type=str, help="wandb entity name")
+    parser.add_argument("--wandb", dest="wandb", action="store_true")
+    parser.add_argument("--no-wandb", dest="wandb", action="store_false")
+    parser.set_defaults(wandb=False)
+
     a = parser.parse_args()
 
     with open(a.config) as f:
@@ -262,6 +272,20 @@ def main():
         print('Batch size per GPU :', h.batch_size)
     else:
         pass
+
+    if a.wandb:
+        name = (
+            f"hifiGAN_lr_{h.learning_rate}_seed_{h.seed}_nmels_{h.num_mels}"
+            f"_nfft_{h.n_fft}_sr_{h.sampling_rate}"
+        )
+        wandb.init(
+            project=args.wandb_project,
+            entity=args.wandb_entity,
+            name=name,
+            settings=wandb.Settings(start_method="fork"),
+            sync_tensorboard=True
+        )
+        wandb.config.update(h)
 
     if h.num_gpus > 1:
         mp.spawn(train, nprocs=h.num_gpus, args=(a, h,))
