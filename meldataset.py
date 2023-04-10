@@ -83,6 +83,16 @@ def get_dataset_filelist(a):
     return training_files, validation_files
 
 
+def get_dataset_files(a):
+    p = Path(a.dataset_path)
+    training_files = (p / "trainval").rglob("*.wav")
+    training_files = [str(i) for i in training_files]
+
+    validation_files = (p / "test").rglob("*.wav")
+    validation_files = [str(i) for i in validation_files]
+
+    return  training_files, validation_files
+
 class MelDataset(torch.utils.data.Dataset):
     def __init__(self, training_files, segment_size, n_fft, num_mels,
                  hop_size, win_size, sampling_rate,  fmin, fmax, split=True, shuffle=True, n_cache_reuse=1,
